@@ -123,6 +123,21 @@ def build_windows():
     """
     print("Build windows")
 
+def tests_linux(target_arch, build_type):
+    """
+    """
+    logging.info('Testing {}.{}'.format(target_arch, build_type))
+    cmd = [os.path.join('build', target_arch, build_type, 'unittests')]
+    logging.debug(cmd)
+    logging.debug(this_dir_path)
+    with Popen(cmd, cwd = this_dir_path) as proc:
+        pass
+
+def tests_android(target_arch, build_type):
+    """
+    """
+    logging.info('No tests for andoid so far')
+
 if __name__ == '__main__':
     logging.basicConfig(format = '%(levelname)s:%(message)s', level=logging.DEBUG)
     parser = argparse.ArgumentParser(description = 'Helper to build v8 for ABP')
@@ -146,8 +161,18 @@ if __name__ == '__main__':
 # add android ndk path
     android_arg_parser.set_defaults(func=lambda args: build_android(args.target_arch, 'release', args.make_params))
 
-    windows_arg_parser = subparsers.add_parser("build-windows")
+    windows_arg_parser = subparsers.add_parser('build-windows')
     windows_arg_parser.set_defaults(func=lambda args: build_windows())
+
+    linux_tests_arg_parser = subparsers.add_parser('tests-linux')
+    linux_tests_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
+    linux_tests_arg_parser.add_argument('build_type', choices = ['Release', 'Debug'])
+    linux_tests_arg_parser.set_defaults(func=lambda args: tests_linux(args.target_arch,
+        args.build_type))
+    android_tests_arg_parser = subparsers.add_parser('tests-android')
+    android_tests_arg_parser.add_argument('target_arch', choices = ['arm', 'ia32'])
+    android_tests_arg_parser.set_defaults(func=lambda args: tests_android(args.target_arch,
+        'release'))
 
     args = parser.parse_args()
     args.func(args)

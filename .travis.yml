@@ -1,0 +1,27 @@
+sudo: false
+dist: trusty
+
+language: cpp
+
+addons:
+  apt:
+    packages:
+      - g++-multilib
+      - binutils-gold
+      - libcurl4-openssl-dev
+      - python3.5
+
+os:
+- linux
+
+env:
+- BUILD_ACTION=linux BUILD_PLATFORM=x64 BUILD_CONFIGURATION=Release
+- BUILD_ACTION=android BUILD_PLATFORM=arm ANDROID_NDK_ROOT=$(pwd -L)/third_party/android-ndk-r10d
+- BUILD_ACTION=android BUILD_PLATFORM=ia32 ANDROID_NDK_ROOT=$(pwd -L)/third_party/android-ndk-r10d
+
+
+before_script: python3.5 build.py sync && wget http://dl.google.com/android/ndk/android-ndk-r10d-linux-x86_64.bin -O third_party/android-ndk-r10d-linux-x86_64.bin && pushd third_party && chmod +x android-ndk-r10d-linux-x86_64.bin && ./android-ndk-r10d-linux-x86_64.bin > /dev/null && popd 
+script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION} --make_params="-j4" && python3.5 build.py tests-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
+
+notifications:
+  email: false
