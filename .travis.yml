@@ -3,13 +3,14 @@ dist: trusty
 
 language: cpp
 
+python: "3.5"
+
 addons:
   apt:
     packages:
       - g++-multilib
       - binutils-gold
       - libcurl4-openssl-dev
-      - python3.5
 
 os:
 - linux
