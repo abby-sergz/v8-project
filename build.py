@@ -2,13 +2,19 @@
 # coding: utf-8
 
 import argparse
+import errno
 import logging
 import os
 import re
+import urllib.request
 import subprocess
+import stat
 import sys
+import time
 
 default_v8_revision = '3e7dee100ac4e951719ce264f79a214f6634cf11'
+android_ndk_URL = 'http://dl.google.com/android/ndk/android-ndk-r10d-linux-x86_64.bin'
+
 this_dir_path = os.path.dirname(os.path.realpath(__file__))
 third_party = 'third_party'
 
@@ -35,6 +41,37 @@ def sync(v8_revision):
     cmd = ['gclient', 'sync', '--revision', v8_revision]
     with Popen(cmd, cwd = working_dir, env = env) as proc:
         pass
+
+def get_android_ndk():
+    """Downloads android NDK if ANDROID_NDK_ROOT is present"""
+    if 'ANDROID_NDK_ROOT' not in os.environ:
+      return
+    file_name = os.path.basename(android_ndk_URL)
+    working_dir = os.path.join(this_dir_path, third_party)
+    dst_file_path = os.path.join(working_dir, file_name)
+    logging.info('Download android NDK to ' + dst_file_path)
+    downloading_started_at = time.time()
+    show_interval = 5 # seconds
+    last_shown_interval = 0
+    def report_download_progress(chunk_number, chunk_size, total_size):
+        nonlocal last_shown_interval
+        current_interval = (time.time() - downloading_started_at) // show_interval
+        if current_interval <= last_shown_interval:
+            return
+        last_shown_interval = current_interval
+        if total_size > 0:
+             logging.info('Download progress: {:>3d}%'.format(100 * chunk_number * chunk_size // total_size))
+    urllib.request.urlretrieve(android_ndk_URL, dst_file_path, report_download_progress)
+
+    st = os.stat(dst_file_path)
+    os.chmod(dst_file_path, st.st_mode | stat.S_IXUSR) # chmod +x
+
+    logging.info('Executing of android NDK self-extracting package')
+    with Popen(dst_file_path, cwd = working_dir, stdout = subprocess.DEVNULL) as proc:
+        pass
+    ndk_path = os.environ['ANDROID_NDK_ROOT']
+    if not os.path.exists(ndk_path) or not os.path.isdir(ndk_path):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), ndk_path)
 
 def build_linux(target_arch, build_type, make_params):
     """Builds v8 for using on linux
@@ -142,9 +179,13 @@ if __name__ == '__main__':
     logging.basicConfig(format = '%(levelname)s:%(message)s', level=logging.DEBUG)
     parser = argparse.ArgumentParser(description = 'Helper to build v8 for ABP')
     subparsers = parser.add_subparsers(title = 'available subcommands', help = 'additional help')
+
     sync_arg_parser = subparsers.add_parser('sync')
     sync_arg_parser.add_argument('--revision', help = 'v8 revision', default = default_v8_revision)
     sync_arg_parser.set_defaults(func = lambda args: sync(args.revision))
+
+    get_android_ndk_arg_parser = subparsers.add_parser('get-android-ndk')
+    get_android_ndk_arg_parser.set_defaults(func = lambda args: get_android_ndk())
 
     linux_arg_parser = subparsers.add_parser('build-linux')
     linux_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
