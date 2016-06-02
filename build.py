@@ -35,10 +35,13 @@ def sync(v8_revision):
     if not os.path.exists(depot_tools_path):
         cmd = ['git', 'clone', 'https://chromium.googlesource.com/chromium/tools/depot_tools.git']
         subprocess.run(cmd, cwd = working_dir)
-    env = {'PATH': os.pathsep.join([os.environ['PATH'], depot_tools_path])}
-    if sys.platform == 'win32':
-        env['DEPOT_TOOLS_WIN_TOOLCHAIN'] = 0
+    env = os.environ.copy()
+    env['PATH'] = os.pathsep.join([os.environ['PATH'], depot_tools_path])
     cmd = ['gclient', 'sync', '--revision', v8_revision]
+    if sys.platform == 'win32':
+        env['DEPOT_TOOLS_WIN_TOOLCHAIN'] = '0'
+        cmd[0] = cmd[0] + '.bat'
+        cmd[:0] = ['cmd', '/C']
     with Popen(cmd, cwd = working_dir, env = env) as proc:
         pass
 
@@ -74,7 +77,7 @@ def get_android_ndk():
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), ndk_path)
 
 def build_linux(target_arch, build_type, make_params):
-    """Builds v8 for using on linux
+    """Builds v8 on linux.
 
     Arguments:
         target_arch - "ia32" or "x64"
@@ -134,9 +137,14 @@ def build_linux(target_arch, build_type, make_params):
         pass
 
 def build_android(target_arch, build_type, make_params):
+    """Builds full v8 on linux for android.
+
+    Arguments:
+        target_arch - "ia32" or "x64"
+        build_type - "Release" or "Debug"
+        make_params - will be added to make command, it allows to add e.g. "-j 8"
     """
-    """
-    # According to the Makefile OUTDIR must be relative.
+    # According to Makefile OUTDIR must be relative.
     # Paths in GYPFLAGS are relative to third_party/v8.
 
     # target refers to GNU make target
@@ -155,13 +163,62 @@ def build_android(target_arch, build_type, make_params):
     with Popen(cmd, cwd = this_dir_path) as proc:
         pass
 
-def build_windows():
+def build_windows(target_arch, build_type):
+    """Build v8 library on windows.
+    vcvarsall.bat should be already called.
+
+    Arguments:
+        target_arch - "ia32" or "x64"
+        build_type - "Release" or "Debug"
     """
-    """
-    print("Build windows")
+    # build/gyp_v8 is not used because it overrides --depth what results in incorrect paths.
+    # tools/gyp/v8.gyp instead of build/all.gyp because v8 tests are not compilable on windows.
+    # gyp from v8 does not respect --generator-output, so we use our own gyp (newer and fixed)
+    # Without msvs_gyp_wrapper.py it cannot compile the solution because some paths are incorrect.
+    working_dir = os.path.join(this_dir_path, third_party, 'v8')
+    output_dir = os.path.join('..', '..', 'build', target_arch)
+    python_path = os.path.join('..', 'depot_tools', 'python.bat')
+    gyp_path = os.path.join('..', '..', 'msvs_gyp_wrapper.py')
+    v8_gyp_path = os.path.join('tools', 'gyp', 'v8.gyp')
+    cmd = ['cmd', '/C', python_path, gyp_path,
+        '--depth=' + output_dir,
+        '-f', 'msvs', '-G', 'msvs_version=2013',
+	'-I' + os.path.join('build', 'standalone.gypi'),
+	'-Dv8_target_arch=' + target_arch,
+	'-Dtarget_arch=' + target_arch,
+	'-I' + os.path.join('..', '..', 'v8-options.gypi'),
+	'-Dcomponent=static_library',
+	'--generator-output=' + output_dir,
+	v8_gyp_path]
+    logging.debug(cmd)
+    with Popen(cmd, cwd = working_dir) as proc:
+        pass
+    
+    # We need to specify path to python 2. There is already python 2 in depor_tools
+    # so, just remove other python paths and add that one.
+    env = os.environ.copy()
+    logging.debug('PATH before: ' + env['PATH'])
+    def is_python_path(path):
+        path = path.strip()
+        if path.startswith('"') and path.endswith('"'):
+            path = path[1:-1]
+        return os.path.exists(os.path.join(path, 'python.exe'))
+    paths = [path for path in env['PATH'].split(os.pathsep) if not is_python_path(path)]
+    paths.append(os.path.join(working_dir, '..', 'depot_tools', 'python276_bin'))
+    env['PATH'] = os.pathsep.join(paths)
+    logging.debug('PATH after: ' + env['PATH'])
+    cmd = ['cmd', '/C', 'msbuild', '/m', '/p:Configuration=' + build_type,
+        os.path.join('..', '..', 'build', target_arch, 'tools', 'gyp', 'v8.sln')]
+    logging.debug(cmd)
+    with Popen(cmd, cwd = working_dir, env = env) as proc:
+        pass
 
 def tests_linux(target_arch, build_type):
-    """
+    """Run tests on linux.
+
+    Arguments:
+        target_arch - "ia32" or "x64"
+        build_type - "Release" or "Debug"
     """
     logging.info('Testing {}.{}'.format(target_arch, build_type))
     cmd = [os.path.join('build', target_arch, build_type, 'unittests')]
@@ -203,17 +260,17 @@ if __name__ == '__main__':
     android_arg_parser.set_defaults(func=lambda args: build_android(args.target_arch, 'release', args.make_params))
 
     windows_arg_parser = subparsers.add_parser('build-windows')
-    windows_arg_parser.set_defaults(func=lambda args: build_windows())
+    windows_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
+    windows_arg_parser.add_argument('build_type', choices = ['Release', 'Debug'])
+    windows_arg_parser.set_defaults(func=lambda args: build_windows(args.target_arch, args.build_type))
 
     linux_tests_arg_parser = subparsers.add_parser('tests-linux')
     linux_tests_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
     linux_tests_arg_parser.add_argument('build_type', choices = ['Release', 'Debug'])
-    linux_tests_arg_parser.set_defaults(func=lambda args: tests_linux(args.target_arch,
-        args.build_type))
+    linux_tests_arg_parser.set_defaults(func=lambda args: tests_linux(args.target_arch, args.build_type))
     android_tests_arg_parser = subparsers.add_parser('tests-android')
     android_tests_arg_parser.add_argument('target_arch', choices = ['arm', 'ia32'])
-    android_tests_arg_parser.set_defaults(func=lambda args: tests_android(args.target_arch,
-        'release'))
+    android_tests_arg_parser.set_defaults(func=lambda args: tests_android(args.target_arch, 'release'))
 
     args = parser.parse_args()
     args.func(args)
