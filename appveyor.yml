@@ -13,9 +13,9 @@ configuration:
 
 environment:
   matrix:
-    - V8_TARGET_ARCH:x64
+    - V8_TARGET_ARCH: x64
     
-    - v8_TARGET_ARCH:ia32
+    - v8_TARGET_ARCH: ia32
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %Configuration%
