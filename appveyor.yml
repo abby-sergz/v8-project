@@ -26,6 +26,6 @@ before_build:
 - cmd: C:\Python35-x64\python.exe build.py sync
 
 build_script:
-- cmd: C:\Python35-x64\python.exe build.py build-windwos %V8_TARGET_ARCH% /p:%Configuration%
+- cmd: C:\Python35-x64\python.exe build.py build-windwos %V8_TARGET_ARCH% %Configuration%
 
 deploy: off
