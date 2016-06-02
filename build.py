@@ -44,6 +44,17 @@ def sync(v8_revision):
         cmd[:0] = ['cmd', '/C']
     with Popen(cmd, cwd = working_dir, env = env) as proc:
         pass
+    # On windows we need our gyp, see comments in build_windows
+    if not sys.platform == 'win32':
+        return
+    if os.path.exists(os.path.join(working_dir, 'gyp')):
+        return
+    cmd = ['cmd', '/C', 'git', 'clone',
+        # Use branch name to simplify it to one command instead of
+        # git init, git remote add, git fetch and git reset to commit.
+        '-b', 'fix-issue-339',
+        'https://github.com/adblockplus/gyp.git']
+    subprocess.run(cmd, cwd = working_dir, check = True)
 
 def get_android_ndk():
     """Downloads android NDK if ANDROID_NDK_ROOT is present"""
