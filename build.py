@@ -135,6 +135,19 @@ def build_linux(target_arch, build_type, make_params):
     logging.debug(working_dir)
     subprocess.run(cmd, cwd = working_dir, check = True)
 
+def deploy_linux(target_arch, build_type):
+    """Deploys linux artifacts.
+
+    Arguments:
+        target_arch - "ia32" or "x64"
+        build_type - "Release" or "Debug"
+        make_params - will be added to make command, it allows to add e.g. "-j 8"
+    """
+    SOME_SECURE_KEY = 'None'
+    if 'SOME_SECURE_KEY' in os.environ:
+        SOME_SECURE_KEY = os.environ['SOME_SECURE_KEY']
+    logging.info('Deploy linux, secure var is ' + SOME_SECURE_KEY)
+
 def build_android(target_arch, build_type, make_params):
     """Builds full v8 on linux for android.
 
@@ -160,6 +173,19 @@ def build_android(target_arch, build_type, make_params):
     logging.debug(cmd)
     logging.debug(this_dir_path)
     subprocess.run(cmd, cwd = this_dir_path, check = True)
+
+def deploy_android(target_arch, build_type):
+    """Deploys android artifacts.
+
+    Arguments:
+        target_arch - "ia32" or "x64"
+        build_type - "Release" or "Debug"
+        make_params - will be added to make command, it allows to add e.g. "-j 8"
+    """
+    SOME_SECURE_KEY = 'None'
+    if 'SOME_SECURE_KEY' in os.environ:
+        SOME_SECURE_KEY = os.environ['SOME_SECURE_KEY']
+    logging.info('Deploy android, secure var is ' + SOME_SECURE_KEY)
 
 def build_windows(target_arch, build_type):
     """Build v8 library on windows.
@@ -209,6 +235,16 @@ def build_windows(target_arch, build_type):
     logging.debug(cmd)
     subprocess.run(cmd, cwd = working_dir, env = env, check = True)
 
+def deploy_windows(target_arch, build_type):
+    """Deploys windows artifacts.
+
+    Arguments:
+        target_arch - "ia32" or "x64"
+        build_type - "Release" or "Debug"
+        make_params - will be added to make command, it allows to add e.g. "-j 8"
+    """
+    logging.info('Deploy windows, secure var is ' + os.environ['SOME_SECURE_KEY'])
+
 def tests_linux(target_arch, build_type):
     """Run tests on linux.
 
@@ -227,6 +263,58 @@ def tests_android(target_arch, build_type):
     """
     logging.info('No tests for andoid so far')
 
+def add_simple_parser(subparsers, option_name, target_arch_choices, build_type_choices, defaults = None):
+    """Creates a returns a simple subparser.
+    """
+    parser = subparsers.add_parser(option_name)
+    parser.add_argument('target_arch', choices = target_arch_choices)
+    parser.add_argument('build_type', choices = build_type_choices)
+    if defaults is not None:
+        parser.set_defaults(func=lambda args: defaults(args.target_arch, args.build_type))
+    return parser
+
+def make_linux_parsers(subparsers):
+    """
+    """
+    target_arch_choices = ['x64', 'ia32']
+    build_type_choices = ['Release', 'Debug']
+
+    parser = add_simple_parser(subparsers, 'build-linux', target_arch_choices, build_type_choices)
+    parser.add_argument('--make_params', help = 'additional parameters for make, e.g. -j8')
+    parser.set_defaults(func = lambda args: build_linux(args.target_arch, args.build_type, args.make_params))
+
+    add_simple_parser(subparsers, 'tests-linux', target_arch_choices, build_type_choices, tests_linux)
+    add_simple_parser(subparsers, 'deploy-linux', target_arch_choices, build_type_choices, deploy_linux)
+
+def make_windows_parsers(subparsers):
+    """
+    """
+    target_arch_choices = ['x64', 'ia32']
+    build_type_choices = ['Release', 'Debug']
+
+    add_simple_parser(subparsers, 'build-windows', target_arch_choices, build_type_choices, build_windows)
+    add_simple_parser(subparsers, 'deploy-windows', target_arch_choices, build_type_choices, deploy_windows)
+
+def make_android_parsers(subparsers):
+    """
+    """
+    parser = subparsers.add_parser('get-android-ndk')
+    parser.set_defaults(func = lambda args: get_android_ndk())
+
+    parser = subparsers.add_parser('build-android')
+    parser.add_argument('target_arch', choices = ['arm', 'ia32'])
+    parser.add_argument('--make_params', help = 'additional parameters for make, e.g. -j8')
+# add android ndk path
+    parser.set_defaults(func=lambda args: build_android(args.target_arch, 'release', args.make_params))
+
+    parser = subparsers.add_parser('tests-android')
+    parser.add_argument('target_arch', choices = ['arm', 'ia32'])
+    parser.set_defaults(func=lambda args: tests_android(args.target_arch, 'release'))
+
+    parser = subparsers.add_parser('deploy-android')
+    parser.add_argument('target_arch', choices = ['arm', 'ia32'])
+    parser.set_defaults(func=lambda args: deploy_android(args.target_arch, 'release'))
+
 if __name__ == '__main__':
     logging.basicConfig(format = '%(levelname)s:%(message)s', level=logging.DEBUG)
     parser = argparse.ArgumentParser(description = 'Helper to build v8 for ABP')
@@ -236,36 +324,14 @@ if __name__ == '__main__':
     sync_arg_parser.add_argument('--revision', help = 'v8 revision', default = default_v8_revision)
     sync_arg_parser.set_defaults(func = lambda args: sync(args.revision))
 
-    get_android_ndk_arg_parser = subparsers.add_parser('get-android-ndk')
-    get_android_ndk_arg_parser.set_defaults(func = lambda args: get_android_ndk())
-
-    linux_arg_parser = subparsers.add_parser('build-linux')
-    linux_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
-    linux_arg_parser.add_argument('build_type', choices = ['Release', 'Debug'])
-    linux_arg_parser.add_argument('--make_params',
-       help = 'additional parameters for make, e.g. -j8')
-    linux_arg_parser.set_defaults(func = lambda args: build_linux(args.target_arch,
-        args.build_type, args.make_params))
-
-    android_arg_parser = subparsers.add_parser('build-android')
-    android_arg_parser.add_argument('target_arch', choices = ['arm', 'ia32'])
-    android_arg_parser.add_argument('--make_params',
-       help = 'additional parameters for make, e.g. -j8')
-# add android ndk path
-    android_arg_parser.set_defaults(func=lambda args: build_android(args.target_arch, 'release', args.make_params))
-
-    windows_arg_parser = subparsers.add_parser('build-windows')
-    windows_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
-    windows_arg_parser.add_argument('build_type', choices = ['Release', 'Debug'])
-    windows_arg_parser.set_defaults(func=lambda args: build_windows(args.target_arch, args.build_type))
-
-    linux_tests_arg_parser = subparsers.add_parser('tests-linux')
-    linux_tests_arg_parser.add_argument('target_arch', choices = ['x64', 'ia32'])
-    linux_tests_arg_parser.add_argument('build_type', choices = ['Release', 'Debug'])
-    linux_tests_arg_parser.set_defaults(func=lambda args: tests_linux(args.target_arch, args.build_type))
-    android_tests_arg_parser = subparsers.add_parser('tests-android')
-    android_tests_arg_parser.add_argument('target_arch', choices = ['arm', 'ia32'])
-    android_tests_arg_parser.set_defaults(func=lambda args: tests_android(args.target_arch, 'release'))
+    # Strictly speaking the platform functions should be in separate modules and the modules should be
+    # also conditionally imported because it can happen that there can be some dependencies for platform
+    # modules which are not avaliable on all platforms, like module to work with windows registry.
+    if sys.platform == 'win32':
+        make_windows_parsers(subparsers)
+    else:
+        make_linux_parsers(subparsers)
+        make_android_parsers(subparsers)
 
     args = parser.parse_args()
     args.func(args)
