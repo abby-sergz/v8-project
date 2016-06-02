@@ -18,14 +18,6 @@ android_ndk_URL = 'http://dl.google.com/android/ndk/android-ndk-r10d-linux-x86_6
 this_dir_path = os.path.dirname(os.path.realpath(__file__))
 third_party = 'third_party'
 
-class Popen(subprocess.Popen):
-    """This calss has check = True behaviour for subprocess.Popen as a context manager.
-    """
-    def __exit__(self, type, value, traceback):
-        subprocess.Popen.__exit__(self, type, value, traceback)
-        if self.returncode != 0:
-            raise subprocess.CalledProcessError(cmd = self.args, returncode = self.returncode)
-
 def sync(v8_revision):
     """Clones all required code and tools.
     """
@@ -34,7 +26,7 @@ def sync(v8_revision):
     # it's too simple check if someone needs more you are welcome to implement it
     if not os.path.exists(depot_tools_path):
         cmd = ['git', 'clone', 'https://chromium.googlesource.com/chromium/tools/depot_tools.git']
-        subprocess.run(cmd, cwd = working_dir)
+        subprocess.run(cmd, cwd = working_dir, check = True)
     env = os.environ.copy()
     env['PATH'] = os.pathsep.join([os.environ['PATH'], depot_tools_path])
     cmd = ['gclient', 'sync', '--revision', v8_revision]
@@ -42,8 +34,7 @@ def sync(v8_revision):
         env['DEPOT_TOOLS_WIN_TOOLCHAIN'] = '0'
         cmd[0] = cmd[0] + '.bat'
         cmd[:0] = ['cmd', '/C']
-    with Popen(cmd, cwd = working_dir, env = env) as proc:
-        pass
+    subprocess.run(cmd, cwd = working_dir, env = env, check = True)
     # On windows we need our gyp, see comments in build_windows
     if not sys.platform == 'win32':
         return
@@ -81,8 +72,7 @@ def get_android_ndk():
     os.chmod(dst_file_path, st.st_mode | stat.S_IXUSR) # chmod +x
 
     logging.info('Executing of android NDK self-extracting package')
-    with Popen(dst_file_path, cwd = working_dir, stdout = subprocess.DEVNULL) as proc:
-        pass
+    subprocess.run(dst_file_path, cwd = working_dir, stdout = subprocess.DEVNULL, check = True)
     ndk_path = os.environ['ANDROID_NDK_ROOT']
     if not os.path.exists(ndk_path) or not os.path.isdir(ndk_path):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), ndk_path)
@@ -131,8 +121,7 @@ def build_linux(target_arch, build_type, make_params):
         os.path.join('build', 'all.gyp')]
     logging.debug(env)
     logging.debug(cmd)
-    with Popen(cmd, cwd = working_dir, env = env) as proc:
-        pass
+    subprocess.run(cmd, cwd = working_dir, env = env, check = True)
     logging.info('Building {}.{}'.format(target_arch, build_type))
     # Generally speaking builddir relative to Makefile but we use absolute path because otherwise
     # make cannot find mksnapshot although the path to it and the current working directory are
@@ -144,8 +133,7 @@ def build_linux(target_arch, build_type, make_params):
         cmd.append(make_params)
     logging.debug(cmd)
     logging.debug(working_dir)
-    with Popen(cmd, cwd = working_dir) as proc:
-        pass
+    subprocess.run(cmd, cwd = working_dir, check = True)
 
 def build_android(target_arch, build_type, make_params):
     """Builds full v8 on linux for android.
@@ -171,8 +159,7 @@ def build_android(target_arch, build_type, make_params):
     logging.info('Building {}.{}'.format(target_arch, build_type))
     logging.debug(cmd)
     logging.debug(this_dir_path)
-    with Popen(cmd, cwd = this_dir_path) as proc:
-        pass
+    subprocess.run(cmd, cwd = this_dir_path, check = True)
 
 def build_windows(target_arch, build_type):
     """Build v8 library on windows.
@@ -202,8 +189,7 @@ def build_windows(target_arch, build_type):
 	'--generator-output=' + output_dir,
 	v8_gyp_path]
     logging.debug(cmd)
-    with Popen(cmd, cwd = working_dir) as proc:
-        pass
+    subprocess.run(cmd, cwd = working_dir, check = True)
     
     # We need to specify path to python 2. There is already python 2 in depor_tools
     # so, just remove other python paths and add that one.
@@ -221,8 +207,7 @@ def build_windows(target_arch, build_type):
     cmd = ['cmd', '/C', 'msbuild', '/m', '/p:Configuration=' + build_type,
         os.path.join('..', '..', 'build', target_arch, 'tools', 'gyp', 'v8.sln')]
     logging.debug(cmd)
-    with Popen(cmd, cwd = working_dir, env = env) as proc:
-        pass
+    subprocess.run(cmd, cwd = working_dir, env = env, check = True)
 
 def tests_linux(target_arch, build_type):
     """Run tests on linux.
@@ -235,8 +220,7 @@ def tests_linux(target_arch, build_type):
     cmd = [os.path.join('build', target_arch, build_type, 'unittests')]
     logging.debug(cmd)
     logging.debug(this_dir_path)
-    with Popen(cmd, cwd = this_dir_path) as proc:
-        pass
+    subprocess.run(cmd, cwd = this_dir_path, check = True)
 
 def tests_android(target_arch, build_type):
     """
