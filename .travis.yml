@@ -1,32 +1,29 @@
 sudo: required
 dist: trusty
-
 language: cpp
-
-python: "3.5"
-
+python: '3.5'
 addons:
   apt:
     packages:
-      - g++-multilib
-      - binutils-gold
-      - libcurl4-openssl-dev
-
+    - g++-multilib
+    - binutils-gold
+    - libcurl4-openssl-dev
 os:
 - linux
-
 env:
-- BUILD_ACTION=linux BUILD_PLATFORM=x64 BUILD_CONFIGURATION=Release
-- BUILD_ACTION=android BUILD_PLATFORM=arm ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
-- BUILD_ACTION=android BUILD_PLATFORM=ia32 ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
+  matrix:
+  - BUILD_ACTION=linux BUILD_PLATFORM=x64 BUILD_CONFIGURATION=Release
+  - BUILD_ACTION=android BUILD_PLATFORM=arm ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
+  - BUILD_ACTION=android BUILD_PLATFORM=ia32 ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
+  global:
+    secure: oaUPuMuHyYsPgAarPZK/DogqoKDJdtt+lnYA9aHZmB/H6X1yKfxievIL4nVdayqHZFgMhryBAJoeucHSvw3mXH7ztWj8rAnxUdhm3IwHKcWYRP1pk/gC890ueWkHiCfQPf07codKScEgWYLG3Uwtr0sQcko6y5gseJSc/ZWNT9+mR0ibcBtndSfPicoPKEsnfbMhtZQk7yV+eFaRMIr8brP4DZ0SbUhDXGgvrmkBUgaQug7d1noEtxWBphjRgiU4EPi5SMQklB4go/OGhY4A1VKnzzBQOO6ZeXm6DxaVsrYroCcKSuz3n2NH25J2z+2c6Nk6cazioUnYiMddllh1BQHYTNqOrXymGodUZxeoEOqJeXhK+MW4Ib6UKdd7SGN1Bs968KASMIooEO/uv3sbcgJgY6idGrcy0ztSW/Q9j2rrk8VtoCTj2IJSFTZKGfiiY1h6gjI6CKBKfJAdD4mh1vri0Lgf/lG9lV9ZWB+W1yELSOpuGG6QvLcYRqmZ5j6DS9EzLqPfMiJr5Tpn1WdojRHgcalNGPcmonDgxCXlTqsOBR/5CspmO1hYZtVbGJ/WGlzi9s5wDaPh1aSSlF822Nb8/QRv/ZHCCK0GUC7b0Hzg4V+r1FLI/GJ3ZoSn7jzGWjfa65e1ANMRUmFarOT6bzsmDy0KNBaQhPCJ/AC7SXI=
 
-before_script: python3.5 build.py sync && python3.5 build.py get-android-ndk 
-
-script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION} --make_params="-j4" && python3.5 build.py tests-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
-
+before_script: python3.5 build.py sync && python3.5 build.py get-android-ndk
+script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
+  --make_params="-j4" && python3.5 build.py tests-${BUILD_ACTION} ${BUILD_PLATFORM}
+  ${BUILD_CONFIGURATION}
 deploy:
   provider: script
   script: python3.5 build.py deploy-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
-
 notifications:
   email: false
