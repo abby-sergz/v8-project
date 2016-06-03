@@ -25,5 +25,7 @@ script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFI
 deploy:
   provider: script
   script: python3.5 build.py deploy-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
+  on:
+    branch: ci-*
 notifications:
   email: false
