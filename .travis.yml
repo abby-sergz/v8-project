@@ -4,10 +4,13 @@ language: cpp
 python: '3.5'
 addons:
   apt:
+    sources:
+    - 'git-core'
     packages:
     - g++-multilib
     - binutils-gold
     - libcurl4-openssl-dev
+    - git
 os:
 - linux
 env:
