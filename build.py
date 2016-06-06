@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import urllib.request
+import shutil
 import subprocess
 import stat
 import sys
@@ -135,18 +136,146 @@ def build_linux(target_arch, build_type, make_params):
     logging.debug(working_dir)
     subprocess.run(cmd, cwd = working_dir, check = True)
 
-def deploy_linux(target_arch, build_type):
-    """Deploys linux artifacts.
-
-    Arguments:
-        target_arch - "ia32" or "x64"
-        build_type - "Release" or "Debug"
-        make_params - will be added to make command, it allows to add e.g. "-j 8"
+def prepare_git_credentials():
+    """Creates ~/.git-credentials, more info on https://git-scm.com/docs/git-credential-store.
     """
-    SOME_SECURE_KEY = 'None'
-    if 'SOME_SECURE_KEY' in os.environ:
-        SOME_SECURE_KEY = os.environ['SOME_SECURE_KEY']
-    logging.info('Deploy linux, secure var is ' + SOME_SECURE_KEY)
+    deployment_token = 'DEPLOYMENT_PERSONAL_ACCESS_TOKEN'
+    if not deployment_token in os.environ:
+      logging.warn('Personal access token is required to be in environment variable')
+      raise Exception('Cannot prepare git credentials', 'Access token is not provided')
+    git_credentials_path = os.path.join(os.path.expanduser('~'), '.git-credentials')
+    if os.path.exists(git_credentials_path):
+        logging.warn('Git credentials will be overwritten, ' + git_credentials_path)
+    # Use has been informed, don't care about deleted content here
+    with open(git_credentials_path, "w") as f:
+        f.write('https://{}:x-oauth-basic@github.com'.format(os.environ[deployment_token]))
+
+def prepare_git_user(repo_dir):
+    """Sets user name and user e-mail."""
+    cmd = ['git', 'config', 'user.name', 'Sir build server']
+    subprocess.run(cmd, cwd = repo_dir, check = True)
+    cmd = ['git', 'config', 'user.email', 'support@adblockplus.org']
+    subprocess.run(cmd, cwd = repo_dir, check = True)
+
+def update_repo(branch):
+    """Clones or updates v8-binaries-repo. Update includes cleaning the current state.
+    """
+    repo_path = os.path.join(this_dir_path, third_party, 'v8-binaries')
+    if not os.path.exists(repo_path):
+        github_user = 'xxxz'
+        cmd = ['git', 'clone', '-b', branch, 'https://github.com/{}/v8-binaries.git'.format(github_user)]
+        subprocess.run(cmd, cwd = os.path.join(this_dir_path, third_party), check = True)
+    else:
+        cmd = ['git', 'fetch', '--prune', 'origin']
+        subprocess.run(cmd, cwd = repo_path, check = True)
+        cmd = ['git', 'reset', '--hard', 'origin/' + branch]
+        subprocess.run(cmd, cwd = repo_path, check = True)
+    return repo_path
+
+
+
+class Deploy:
+    """The class which provides interface to deploy the artifacts.
+    """
+    def __init__(self, branch, os, target_arch, build_type):
+        prepare_git_credentials()
+        self.os = os
+        self.target_arch = target_arch
+        self.build_type = build_type
+        self.branch = branch
+        self.repo_path = update_repo('linux')
+        prepare_git_user(self.repo_path)
+
+    def clean_deployment(self):
+        self.dest_path = os.path.join(self.repo_path, self.os + '_' + self.target_arch, self.build_type)
+        logging.info('Removing ' + self.dest_path)
+        subprocess.run(['git', 'rm', '-rf', '--ignore-unmatch', self.dest_path], cwd = self.repo_path, check = True)
+
+    def clean_directory(self, dir_path):
+        """dir_path should be relative to repo_path."""
+        path = os.path.join(self.repo_path, 'include')
+        logging.info('Removing ' + path)
+        cmd = ['git', 'rm', '-rf', '--ignore-unmatch', dir_path]
+        subprocess.run(cmd, cwd = self.repo_path, check = True)
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
+    def add_file(self, src_file_path, dest_file_path):
+        """dest_file_path should be relative
+        """
+        full_dest_file_path = os.path.join(self.dest_path, dest_file_path)
+        dest_dir_path = os.path.dirname(full_dest_file_path)
+        os.makedirs(dest_dir_path, exist_ok = True)
+        logging.info('Adding "{}" to "{}"'.format(dest_file_path, full_dest_file_path))
+        shutil.copy2(src_file_path, full_dest_file_path)
+
+    def add_file_content(self, content, dest_file_path):
+        full_dest_file_path = os.path.join(self.dest_path, dest_file_path)
+        dest_dir_path = os.path.dirname(full_dest_file_path)
+        os.makedirs(dest_dir_path, exist_ok = True)
+        logging.info('Adding content file to "{}"'.format(dest_file_path, full_dest_file_path))
+        with open(full_dest_file_path, 'w') as f:
+            f.write(content)
+
+    def add_folder(self, src_folder_path, dest_path):
+        """dst_path should be relative to repo_path
+        """
+        full_dest_folder_path = os.path.join(self.repo_path, dest_path)
+        shutil.copytree(src_folder_path, full_dest_folder_path)
+        cmd = ['git', 'add', os.path.join(self.repo_path, dest_path)]
+        subprocess.run(cmd, cwd = self.repo_path, check = True)
+
+    def commit_and_push(self, commit):
+        """
+        """
+        self.commit = commit
+        content = 'Commit: ' + self.commit
+        self.add_file_content(content, 'info')
+        cmd = ['git', 'add', self.dest_path]
+        subprocess.run(cmd, cwd = self.repo_path, check = True)
+        cmd = ['git', 'commit', '-m', 'Build result for git:' + self.commit]
+        subprocess.run(cmd, cwd = self.repo_path, check = True)
+        cmd = ['git', 'push', 'origin', self.branch]
+        subprocess.run(cmd, cwd = self.repo_path, check = True)
+
+def get_current_commit(repo_path):
+    """
+    """
+    cmd = ['git', 'rev-parse', '--verify', 'HEAD']
+    return subprocess.run(cmd, check = True, stdout = subprocess.PIPE).stdout.decode('utf-8').strip()
+
+def get_v8_static_libraries(path):
+    """Returns v8 static libraries at path without going deeper.
+    """
+    dot_a = '.a' # static lib extension
+    libv8_prefix = 'libv8_'
+    for dir_name, subdir_list, file_list in os.walk(path, True):
+        if dir_name != path:
+            continue
+        for file_name in file_list:
+            if file_name.startswith(libv8_prefix) and file_name.endswith(dot_a):
+                yield file_name
+
+def deploy_nix(deploy):
+    """Deploys linux or android artifacts.
+    """
+    deploy.clean_deployment()
+    lib_dir = None
+    if deploy.os == 'linux':
+        lib_dir = os.path.join(this_dir_path, 'build', deploy.target_arch, deploy.build_type)
+        deploy.clean_directory('include')
+        src_include = os.path.join(this_dir_path, third_party, 'v8', 'include')
+        deploy.add_folder(src_include, 'include')
+    elif deploy.os == 'android':
+        folder_name = 'android_{}.{}'.format(deploy.target_arch, deploy.build_type)
+        lib_dir = os.path.join(this_dir_path, 'build', folder_name, folder_name)
+    for file_name in get_v8_static_libraries(lib_dir):
+        full_file_path = os.path.join(lib_dir, file_name)
+        deploy.add_file(full_file_path, file_name)
+    shared_relative_file_path = os.path.join('lib.target', 'libv8.so')
+    deploy.add_file(os.path.join(lib_dir, shared_relative_file_path), shared_relative_file_path)
+    commit = get_current_commit(this_dir_path)
+    deploy.commit_and_push(commit)
 
 def build_android(target_arch, build_type, make_params):
     """Builds full v8 on linux for android.
@@ -173,19 +302,6 @@ def build_android(target_arch, build_type, make_params):
     logging.debug(cmd)
     logging.debug(this_dir_path)
     subprocess.run(cmd, cwd = this_dir_path, check = True)
-
-def deploy_android(target_arch, build_type):
-    """Deploys android artifacts.
-
-    Arguments:
-        target_arch - "ia32" or "x64"
-        build_type - "Release" or "Debug"
-        make_params - will be added to make command, it allows to add e.g. "-j 8"
-    """
-    SOME_SECURE_KEY = 'None'
-    if 'SOME_SECURE_KEY' in os.environ:
-        SOME_SECURE_KEY = os.environ['SOME_SECURE_KEY']
-    logging.info('Deploy android, secure var is ' + SOME_SECURE_KEY)
 
 def build_windows(target_arch, build_type):
     """Build v8 library on windows.
@@ -284,7 +400,9 @@ def make_linux_parsers(subparsers):
     parser.set_defaults(func = lambda args: build_linux(args.target_arch, args.build_type, args.make_params))
 
     add_simple_parser(subparsers, 'tests-linux', target_arch_choices, build_type_choices, tests_linux)
-    add_simple_parser(subparsers, 'deploy-linux', target_arch_choices, build_type_choices, deploy_linux)
+    parser = add_simple_parser(subparsers, 'deploy-linux', target_arch_choices, build_type_choices)
+    parser.set_defaults(func=lambda args: deploy_nix(Deploy(branch = 'linux', os = 'linux',
+        target_arch = args.target_arch, build_type = args.build_type)))
 
 def make_windows_parsers(subparsers):
     """
@@ -313,7 +431,8 @@ def make_android_parsers(subparsers):
 
     parser = subparsers.add_parser('deploy-android')
     parser.add_argument('target_arch', choices = ['arm', 'ia32'])
-    parser.set_defaults(func=lambda args: deploy_android(args.target_arch, 'release'))
+    parser.set_defaults(func=lambda args: deploy_nix(Deploy(branch = 'linux', os = 'android',
+        target_arch = args.target_arch, build_type = 'release')))
 
 if __name__ == '__main__':
     logging.basicConfig(format = '%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -334,4 +453,7 @@ if __name__ == '__main__':
         make_android_parsers(subparsers)
 
     args = parser.parse_args()
-    args.func(args)
+    if 'func' in args:
+        args.func(args)
+    else:
+        parser.print_help()

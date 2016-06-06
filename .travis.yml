@@ -16,7 +16,7 @@ env:
   - BUILD_ACTION=android BUILD_PLATFORM=arm ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
   - BUILD_ACTION=android BUILD_PLATFORM=ia32 ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
   global:
-    secure: oaUPuMuHyYsPgAarPZK/DogqoKDJdtt+lnYA9aHZmB/H6X1yKfxievIL4nVdayqHZFgMhryBAJoeucHSvw3mXH7ztWj8rAnxUdhm3IwHKcWYRP1pk/gC890ueWkHiCfQPf07codKScEgWYLG3Uwtr0sQcko6y5gseJSc/ZWNT9+mR0ibcBtndSfPicoPKEsnfbMhtZQk7yV+eFaRMIr8brP4DZ0SbUhDXGgvrmkBUgaQug7d1noEtxWBphjRgiU4EPi5SMQklB4go/OGhY4A1VKnzzBQOO6ZeXm6DxaVsrYroCcKSuz3n2NH25J2z+2c6Nk6cazioUnYiMddllh1BQHYTNqOrXymGodUZxeoEOqJeXhK+MW4Ib6UKdd7SGN1Bs968KASMIooEO/uv3sbcgJgY6idGrcy0ztSW/Q9j2rrk8VtoCTj2IJSFTZKGfiiY1h6gjI6CKBKfJAdD4mh1vri0Lgf/lG9lV9ZWB+W1yELSOpuGG6QvLcYRqmZ5j6DS9EzLqPfMiJr5Tpn1WdojRHgcalNGPcmonDgxCXlTqsOBR/5CspmO1hYZtVbGJ/WGlzi9s5wDaPh1aSSlF822Nb8/QRv/ZHCCK0GUC7b0Hzg4V+r1FLI/GJ3ZoSn7jzGWjfa65e1ANMRUmFarOT6bzsmDy0KNBaQhPCJ/AC7SXI=
+    secure: 1STdYRgL6zXGGSpgk49xhXvfr6U4P/ug1evhE04AhchFukP9asvLzotnUd9UZDuAsKLq8p978ZnhxqK8CDkwdpKhnOIplVcZwFVuB7tVWnzXttM7vEUFZ+icNnmVRrVHaZqpeM5dRsAD6pHSkPH5RvC5unqIQrHXNroc4/lklLMwm5hLUcKblraArB0gKvqFYukOEEuEV09q9A2qVGkOQHxio8doLfP88mZkmjAgosPbDaSnY5DB9xAFYFOBRqM6fMg2szFTgMlPifdS8oB9L7pVKw9LQvl7JqwUurWttMeVIT9osgs3SukgIqkHqzscr5x5s/FkW3pPmrSH8c66TlabvxcP3xiicdU0dc9MGtj+duZbS9HtrGapIFMuIwlMK922M4algIamMOinP7MgWGy0l3aE0g3HMOlN+gfYU9qaXP0It5n4z1S8ZN32j/EBD5/GKvhUQqGf+m64V7G60xReXESYK7bCoPiv0j33Evy0OSiCcohJHcRmBXl87WYoaIXCx5omDRmIuimJSb9C/oR7JAx8zhjzCc03ZGqFrq+EjWr+8gQBnJgI8a/cjL4yantHvFyOlzyK7J0N5nbyzkf0LK9wr18TtE+Ci0w5NteDHEjP2Jj+1R9Xcf8l0gRVA8+sECCwK2+82eU2TbgCJjfbNYDeSX2PesPwZjAMp4E=
 
 before_script: python3.5 build.py sync && python3.5 build.py get-android-ndk
 script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
@@ -25,6 +25,7 @@ script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFI
 deploy:
   provider: script
   script: python3.5 build.py deploy-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
+  skip_cleanup: true
   on:
     branch: ci-*
 notifications:
