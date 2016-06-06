@@ -143,6 +143,9 @@ def prepare_git_credentials():
     if not deployment_token in os.environ:
       logging.warn('Personal access token is required to be in environment variable')
       raise Exception('Cannot prepare git credentials', 'Access token is not provided')
+    cmd = ['git', 'config', '--global', 'credential.helper', 'store']
+    subprocess.run(cmd, cwd = this_dir_path, check = True)
+
     git_credentials_path = os.path.join(os.path.expanduser('~'), '.git-credentials')
     if os.path.exists(git_credentials_path):
         logging.warn('Git credentials will be overwritten, ' + git_credentials_path)
