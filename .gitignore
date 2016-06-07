@@ -9,3 +9,4 @@
 
 *.pyc
 /third_party/gyp/
+/third_party/v8-binaries/

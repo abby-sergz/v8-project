@@ -186,7 +186,7 @@ class Deploy:
         self.target_arch = target_arch
         self.build_type = build_type
         self.branch = branch
-        self.repo_path = update_repo('linux')
+        self.repo_path = update_repo(self.branch)
         prepare_git_user(self.repo_path)
 
     def clean_deployment(self):
@@ -250,13 +250,17 @@ def get_current_commit(repo_path):
 def get_v8_static_libraries(path):
     """Returns v8 static libraries at path without going deeper.
     """
-    dot_a = '.a' # static lib extension
+    suffix = '.a' # static lib extension
+    if sys.platform == 'win32':
+        suffix = '.lib'
     libv8_prefix = 'libv8_'
+    if sys.platform == 'win32':
+        libv8_prefix = 'v8_'
     for dir_name, subdir_list, file_list in os.walk(path, True):
         if dir_name != path:
             continue
         for file_name in file_list:
-            if file_name.startswith(libv8_prefix) and file_name.endswith(dot_a):
+            if file_name.startswith(libv8_prefix) and file_name.endswith(suffix):
                 yield file_name
 
 def deploy_nix(deploy):
@@ -354,15 +358,16 @@ def build_windows(target_arch, build_type):
     logging.debug(cmd)
     subprocess.run(cmd, cwd = working_dir, env = env, check = True)
 
-def deploy_windows(target_arch, build_type):
+def deploy_win32(deploy):
     """Deploys windows artifacts.
-
-    Arguments:
-        target_arch - "ia32" or "x64"
-        build_type - "Release" or "Debug"
-        make_params - will be added to make command, it allows to add e.g. "-j 8"
     """
-    logging.info('Deploy windows, secure var is ' + os.environ['SOME_SECURE_KEY'])
+    deploy.clean_deployment()
+    lib_dir = lib_dir = os.path.join(this_dir_path, 'build', deploy.target_arch, 'build', deploy.build_type)
+    for file_name in get_v8_static_libraries(lib_dir):
+        full_file_path = os.path.join(lib_dir, file_name)
+        deploy.add_file(full_file_path, file_name)
+    commit = get_current_commit(this_dir_path)
+    deploy.commit_and_push(commit)
 
 def tests_linux(target_arch, build_type):
     """Run tests on linux.
@@ -414,7 +419,9 @@ def make_windows_parsers(subparsers):
     build_type_choices = ['Release', 'Debug']
 
     add_simple_parser(subparsers, 'build-windows', target_arch_choices, build_type_choices, build_windows)
-    add_simple_parser(subparsers, 'deploy-windows', target_arch_choices, build_type_choices, deploy_windows)
+    parser = add_simple_parser(subparsers, 'deploy-windows', target_arch_choices, build_type_choices)
+    parser.set_defaults(func=lambda args: deploy_win32(Deploy(branch = 'win32', os = 'win32',
+        target_arch = args.target_arch, build_type = args.build_type)))
 
 def make_android_parsers(subparsers):
     """
