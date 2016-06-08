@@ -108,7 +108,7 @@ def install_git_lfs():
         subprocess.run(cmd, check = True)
         env['PREFIX'] = user_bin_path
         install_sh = os.path.join(user_bin_path, 'install.sh')
-        subprocess.run([install_sh], env = env, check = True, shell = True)
+        subprocess.run([install_sh], cwd = user_bin_path, env = env, check = True, shell = True)
         os.remove(install_sh)
 
 def build_linux(target_arch, build_type, make_params):
