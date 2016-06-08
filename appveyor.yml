@@ -23,10 +23,6 @@ environment:
 init:
 - cmd: echo %V8_TARGET_ARCH% %Configuration%
 
-install:
-- cmd: set PATH=%PATH%;%USERPROFILE%\bin
-- cmd: C:\Python35-x64\python.exe build.py install-git-lfs
-
 before_build:
 - cmd: C:\Python35-x64\python.exe build.py sync
 
