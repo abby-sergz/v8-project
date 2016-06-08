@@ -48,14 +48,7 @@ def sync(v8_revision):
         'https://github.com/adblockplus/gyp.git']
     subprocess.run(cmd, cwd = working_dir, check = True)
 
-def get_android_ndk():
-    """Downloads android NDK if ANDROID_NDK_ROOT is present"""
-    if 'ANDROID_NDK_ROOT' not in os.environ:
-      return
-    file_name = os.path.basename(android_ndk_URL)
-    working_dir = os.path.join(this_dir_path, third_party)
-    dst_file_path = os.path.join(working_dir, file_name)
-    logging.info('Download android NDK to ' + dst_file_path)
+def download_file(url, dest_file_path):
     downloading_started_at = time.time()
     show_interval = 5 # seconds
     last_shown_interval = 0
@@ -67,7 +60,17 @@ def get_android_ndk():
         last_shown_interval = current_interval
         if total_size > 0:
              logging.info('Download progress: {:>3d}%'.format(100 * chunk_number * chunk_size // total_size))
-    urllib.request.urlretrieve(android_ndk_URL, dst_file_path, report_download_progress)
+    urllib.request.urlretrieve(url, dest_file_path, report_download_progress)
+
+def get_android_ndk():
+    """Downloads android NDK if ANDROID_NDK_ROOT is present"""
+    if 'ANDROID_NDK_ROOT' not in os.environ:
+      return
+    file_name = os.path.basename(android_ndk_URL)
+    working_dir = os.path.join(this_dir_path, third_party)
+    dst_file_path = os.path.join(working_dir, file_name)
+    logging.info('Download android NDK to ' + dst_file_path)
+    download_file(android_ndk_URL, dst_file_path)
 
     st = os.stat(dst_file_path)
     os.chmod(dst_file_path, st.st_mode | stat.S_IXUSR) # chmod +x
@@ -77,6 +80,36 @@ def get_android_ndk():
     ndk_path = os.environ['ANDROID_NDK_ROOT']
     if not os.path.exists(ndk_path) or not os.path.isdir(ndk_path):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), ndk_path)
+
+def install_git_lfs():
+    """
+    """
+    url = 'https://github.com/github/git-lfs/releases/download/v1.2.1/git-lfs-linux-amd64-1.2.1.tar.gz'
+    tmp_dir_path = '/tmp'
+    user_bin_path = os.path.join(os.path.expanduser('~'), 'bin')
+    if not os.path.exists(user_bin_path):
+        os.makedirs(user_bin_path)
+    if sys.platform == 'win32':
+        url = 'https://github.com/github/git-lfs/releases/download/v1.2.1/git-lfs-windows-amd64-1.2.1.zip'
+        tmp_dir_path = os.environ['TEMP']
+    dest_file_path = os.path.join(tmp_dir_path, os.path.basename(url))
+    logging.info('{}\n{}'.format(url, dest_file_path))
+    download_file(url, dest_file_path)
+
+    env = os.environ.copy()
+    if sys.platform == 'win32':
+        git_lfs_exe = 'git-lfs.exe'
+        path_to_7zip = os.path.join(env['PROGRAMFILES'], '7-Zip', '7z.exe')
+        cmd = [path_to_7zip, 'e', dest_file_path, 'git-lfs-windows-amd64-1.2.1\\' + git_lfs_exe, '-o{}'.format(user_bin_path), '-y']
+        subprocess.run(cmd, check = True)
+        subprocess.run([os.path.join(user_bin_path, git_lfs_exe), 'install'], check = True)
+    else:
+        cmd = ['tar', 'xzf', dest_file_path, '-C', user_bin_path, '--strip-components', '1', 'git-lfs-1.2.1/git-lfs', 'git-lfs-1.2.1/install.sh']
+        subprocess.run(cmd, check = True)
+        env['PREFIX'] = user_bin_path
+        install_sh = os.path.join(user_bin_path, 'install.sh')
+        subprocess.run([install_sh], env = env, check = True, shell = True)
+        os.remove(install_sh)
 
 def build_linux(target_arch, build_type, make_params):
     """Builds v8 on linux.
@@ -461,6 +494,9 @@ if __name__ == '__main__':
     else:
         make_linux_parsers(subparsers)
         make_android_parsers(subparsers)
+
+    subparser = subparsers.add_parser('install-git-lfs')
+    subparser.set_defaults(func = lambda args: install_git_lfs())
 
     args = parser.parse_args()
     if 'func' in args:
