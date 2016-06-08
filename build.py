@@ -213,7 +213,7 @@ def update_repo(branch):
 class Deploy:
     """The class which provides interface to deploy the artifacts.
     """
-    def __init__(self, branch, os, target_arch, build_type):
+    def __init__(self, os, target_arch, build_type, branch = 'dev'):
         prepare_git_credentials()
         self.os = os
         self.target_arch = target_arch
@@ -442,7 +442,7 @@ def make_linux_parsers(subparsers):
 
     add_simple_parser(subparsers, 'tests-linux', target_arch_choices, build_type_choices, tests_linux)
     parser = add_simple_parser(subparsers, 'deploy-linux', target_arch_choices, build_type_choices)
-    parser.set_defaults(func=lambda args: deploy_nix(Deploy(branch = 'linux', os = 'linux',
+    parser.set_defaults(func=lambda args: deploy_nix(Deploy(os = 'linux',
         target_arch = args.target_arch, build_type = args.build_type)))
 
 def make_windows_parsers(subparsers):
@@ -453,7 +453,7 @@ def make_windows_parsers(subparsers):
 
     add_simple_parser(subparsers, 'build-windows', target_arch_choices, build_type_choices, build_windows)
     parser = add_simple_parser(subparsers, 'deploy-windows', target_arch_choices, build_type_choices)
-    parser.set_defaults(func=lambda args: deploy_win32(Deploy(branch = 'win32', os = 'win32',
+    parser.set_defaults(func=lambda args: deploy_win32(Deploy(os = 'win32',
         target_arch = args.target_arch, build_type = args.build_type)))
 
 def make_android_parsers(subparsers):
@@ -474,7 +474,7 @@ def make_android_parsers(subparsers):
 
     parser = subparsers.add_parser('deploy-android')
     parser.add_argument('target_arch', choices = ['arm', 'ia32'])
-    parser.set_defaults(func=lambda args: deploy_nix(Deploy(branch = 'linux', os = 'android',
+    parser.set_defaults(func=lambda args: deploy_nix(Deploy(os = 'android',
         target_arch = args.target_arch, build_type = 'release')))
 
 if __name__ == '__main__':
