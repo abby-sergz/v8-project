@@ -5,29 +5,27 @@ pull_requests:
 
 skip_tags: true
 
-image: Visual Studio 2013
+image: Visual Studio 2017
 
 configuration:
-- Release
-- Debug
+- release
+- debug
 
 environment:
-  global:
-    DEPLOYMENT_PERSONAL_ACCESS_TOKEN:
-      secure: qT/U8FGBtZM5qwvGtuASXXbHhl3R6w2R5YEBkc09E+RT6SsgPnhHoLQOsomh3ADP
   matrix:
   - V8_TARGET_ARCH: x64
-    
   - v8_TARGET_ARCH: ia32
 
 init:
-- cmd: echo %V8_TARGET_ARCH% %Configuration%
+- cmd: echo %V8_TARGET_ARCH% %configuration%
 
 before_build:
 - cmd: C:\Python35-x64\python.exe build.py sync
 
 build_script:
-- cmd: C:\Python35-x64\python.exe build.py build-windows %V8_TARGET_ARCH% %Configuration%
+- cmd: C:\Python35-x64\python.exe build.py build-windows %V8_TARGET_ARCH% %configuration%
 
 deploy_script:
-- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
+- cmd: dir build\%V8_TARGET_ARCH%\%configuration%
+- cmd: dir build\%V8_TARGET_ARCH%\%configuration%\obj
+#- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
