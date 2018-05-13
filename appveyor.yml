@@ -34,5 +34,6 @@ deploy_script:
 
 artifacts:
 - path: build
-- name: build-$(V8_TARGET_ARCH)_$(configuration)
+  name: build-$(V8_TARGET_ARCH)_$(configuration)
+  type: zip
 
