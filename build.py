@@ -38,7 +38,7 @@ def sync(v8_revision):
         subprocess.run(cmd, cwd = working_dir, check = True)
     env = os.environ.copy()
     env["PATH"] = os.pathsep.join([os.environ["PATH"], depot_tools_path])
-    gclient_file = "gclient-" + "win" if sys.platform == "win32" else "nix"
+    gclient_file = "gclient-" + ("win" if sys.platform == "win32" else "nix")
     cmd_gclient_file = ["--gclientfile", gclient_file]
     call_gclient = ["gclient"]
     if sys.platform == "win32":
@@ -324,7 +324,7 @@ def build_android(target_arch, build_type, make_params):
     logging.debug(this_dir_path)
     subprocess.run(cmd, cwd = this_dir_path, check = True)
 
-def build_windows(target_arch, build_type):
+def build_v8(target_arch, build_type, target_os = sys.platform):
     """Build v8 library on windows.
 
     Arguments:
@@ -333,34 +333,20 @@ def build_windows(target_arch, build_type):
     """
     working_dir = os.path.join(this_dir_path, third_party, "v8")
     output_dir = os.path.abspath(os.path.join("build", target_arch, build_type))
-    gn_path = os.path.join("..", "depot_tools", "gn.bat")
-    args = read_file_lines("-".join(["args", "win", target_arch, build_type]))
+    call_gn = [os.path.join("..", "depot_tools", "gn")]
+    env = os.environ.copy()
+    if sys.platform == "win32":
+        env["DEPOT_TOOLS_WIN_TOOLCHAIN"] = "0"
+        call_gn[0] = call_gn[0] + ".bat"
+        call_gn[:0] = ["cmd", "/C"]
+    args_os = {"win32": "win", "darwin": "osx", "linux": "linux", "android": "android"}
+    args = read_file_lines("-".join(["args", args_os[sys.platform], target_arch, build_type]))
     args = [re.sub("[\s]", "", arg) for arg in args]
     args = " ".join(args).strip()
-    cmd = ["cmd", "/C", gn_path, "gen", output_dir, "--args=" + args]
-    env = os.environ.copy()
-    env["DEPOT_TOOLS_WIN_TOOLCHAIN"] = "0"
+    cmd = call_gn + ["gen", output_dir, "--args=" + args]
     subprocess.run(cmd, cwd = working_dir, env = env, check = True)
     subprocess.run([os.sep.join([third_party, "depot_tools", "ninja"]), "-C", output_dir, "v8_monolith"], cwd = this_dir_path, env = env, check = True)
     
-    # We need to specify path to python 2. There is already python 2 in depor_tools
-    # so, just remove other python paths and add that one.
-#    env = os.environ.copy()
-#    logging.debug("PATH before: " + env["PATH"])
-#    def is_python_path(path):
-#        path = path.strip()
-#        if path.startswith(""") and path.endswith("""):
-#            path = path[1:-1]
-#        return os.path.exists(os.path.join(path, "python.exe"))
-#    paths = [path for path in env["PATH"].split(os.pathsep) if not is_python_path(path)]
-#    paths.append(os.path.join(working_dir, "..", "depot_tools", "python276_bin"))
-#    env["PATH"] = os.pathsep.join(paths)
-#    logging.debug("PATH after: " + env["PATH"])
-#    cmd = ["cmd", "/C", "msbuild", "/m", "/p:Configuration=" + build_type,
-#        os.path.join("..", "..", "build", target_arch, "tools", "gyp", "v8.sln")]
-#    logging.debug(cmd)
-#    subprocess.run(cmd, cwd = working_dir, env = env, check = True)
-
 def deploy_win32(deploy):
     """Deploys windows artifacts.
     """
@@ -404,11 +390,9 @@ def make_linux_parsers(subparsers):
     """
     """
     target_arch_choices = ["x64", "ia32"]
-    build_type_choices = ["Release", "Debug"]
+    build_type_choices = ["release", "debug"]
 
-    parser = add_simple_parser(subparsers, "build-linux", target_arch_choices, build_type_choices)
-    parser.add_argument("--make_params", help = "additional parameters for make, e.g. -j8")
-    parser.set_defaults(func = lambda args: build_linux(args.target_arch, args.build_type, args.make_params))
+    add_simple_parser(subparsers, "build-linux", target_arch_choices, build_type_choices, build_v8)
 
     add_simple_parser(subparsers, "tests-linux", target_arch_choices, build_type_choices, tests_linux)
     parser = add_simple_parser(subparsers, "deploy-linux", target_arch_choices, build_type_choices)
@@ -421,7 +405,7 @@ def make_windows_parsers(subparsers):
     target_arch_choices = ["x64", "ia32"]
     build_type_choices = ["release", "debug"]
 
-    add_simple_parser(subparsers, "build-windows", target_arch_choices, build_type_choices, build_windows)
+    add_simple_parser(subparsers, "build-windows", target_arch_choices, build_type_choices, build_v8)
     parser = add_simple_parser(subparsers, "deploy-windows", target_arch_choices, build_type_choices)
     parser.set_defaults(func=lambda args: deploy_win32(Deploy(os = "win32",
         target_arch = args.target_arch, build_type = args.build_type)))
