@@ -4,6 +4,10 @@ before_script:
 
 my-job:
   script:
-  - echo "Hello world!"
-  - python --version
-  - python3.5 --version
+  - python3.5 build.py sync
+  - python3.5 build.py build-linux x64 debug
+  artifacts:
+    paths:
+    - build
+    expire_in: 4 mos
+
