@@ -1,0 +1,3 @@
+my-job:
+  script:
+  - echo "Hello world!"
