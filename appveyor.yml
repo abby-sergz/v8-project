@@ -6,8 +6,8 @@ pull_requests:
 skip_tags: true
 
 image:
-- Visual Studio 2017
 - ubuntu
+- Visual Studio 2017
 
 configuration:
 - release
