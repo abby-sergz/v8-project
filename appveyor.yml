@@ -5,18 +5,33 @@ pull_requests:
 
 skip_tags: true
 
-image:
-- ubuntu
-- Visual Studio 2017
-
-configuration:
-- release
-- debug
-
 environment:
   matrix:
-  - V8_TARGET_ARCH: x64
-  - v8_TARGET_ARCH: ia32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    BUILD_V8: linux
+    V8_TARGET_ARCH: x64
+    configuration: debug
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    BUILD_V8: android
+    V8_TARGET_ARCH: arm
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    BUILD_V8: android
+    V8_TARGET_ARCH: arm64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+    BUILD_V8: android
+    V8_TARGET_ARCH: ia32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    V8_TARGET_ARCH: x64
+    configuration: release
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    V8_TARGET_ARCH: x64
+    configuration: debug
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    v8_TARGET_ARCH: ia32
+    configuration: release
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    v8_TARGET_ARCH: ia32
+    configuration: debug
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %configuration%
@@ -30,11 +45,12 @@ before_build:
 
 build_script:
 - cmd: C:\Python35-x64\python.exe build.py build-windows %V8_TARGET_ARCH% %configuration%
-- sh: python3.5 build.py build-linux ${V8_TARGET_ARCH} ${configuration}
+- sh: python3.5 build.py build-${BUILD_V8} ${V8_TARGET_ARCH} ${configuration}
 
 deploy_script:
 - cmd: dir build\%V8_TARGET_ARCH%\%configuration%
 - cmd: dir build\%V8_TARGET_ARCH%\%configuration%\obj
+- sh: ls build
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
