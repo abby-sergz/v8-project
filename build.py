@@ -43,7 +43,7 @@ def sync(v8_revision):
     subprocess.run(call_gclient + ['sync', '--revision', v8_revision] + cmd_gclient_file,
                    cwd=working_dir, env=env, check=True)
     subprocess.run(call_gclient + ['runhooks'] + cmd_gclient_file,
-                   cwd=os.sep.join(working_dir, 'v8'), env=env, check=True)
+                   cwd=os.sep.join([working_dir, 'v8']), env=env, check=True)
 
 
 def build_v8(target_arch, build_type, target_platform):
