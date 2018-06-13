@@ -29,8 +29,8 @@ before_build:
 - sh: python3.5 build.py sync
 
 build_script:
-- cmd: C:\Python35-x64\python.exe build.py build-windows %V8_TARGET_ARCH% %configuration%
-- sh: python3.5 build.py build-linux ${V8_TARGET_ARCH} ${configuration}
+- cmd: C:\Python35-x64\python.exe build.py build windows %V8_TARGET_ARCH% %configuration%
+- sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${configuration}
 
 deploy_script:
 - cmd: dir build\%V8_TARGET_ARCH%\%configuration%
