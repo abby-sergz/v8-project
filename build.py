@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import logging
 import os
-import re
 import subprocess
 import sys
 
@@ -13,13 +13,9 @@ this_dir_path = os.path.dirname(os.path.realpath(__file__))
 third_party = 'third_party'
 
 
-def read_file_lines(file_path):
-    '''Returns stripped lines of file at file_path.
-    '''
-    content = []
-    with open(file_path) as f:
-        content = f.read().splitlines()
-    return content
+def read_as_json(file_path):
+    with open(file_path, mode='r') as file:
+        return json.load(file, encoding='UTF-8')
 
 
 def sync(v8_revision):
@@ -61,10 +57,22 @@ def build_v8(target_arch, build_type, target_platform):
         env['DEPOT_TOOLS_WIN_TOOLCHAIN'] = '0'
         call_gn[0] = call_gn[0] + '.bat'
         call_gn[:0] = ['cmd', '/C']
+
+    args_library = read_as_json('args-library.json')
     args_os = {'win32': 'win', 'darwin': 'osx', 'linux': 'linux', 'android': 'android'}
-    args = read_file_lines('-'.join(['args', args_os[target_platform], target_arch, build_type]))
-    args = [re.sub('[\\s]', '', arg) for arg in args]
-    args = ' '.join(args).strip()
+    gn_args = args_library['common'].copy()
+    for args_part in [args_os[target_platform], target_arch, build_type]:
+        if args_part not in args_library:
+            continue
+        gn_args.update(args_library[args_part])
+
+    def stringify(value):
+        if isinstance(value, str):
+            return value
+        if isinstance(value, bool):
+            return 'true' if value else 'false'
+
+    args = ' '.join('{}={}'.format(kv[0], stringify(kv[1])) for kv in gn_args.items())
     cmd = call_gn + ['gen', output_dir, '--args=' + args]
     subprocess.run(cmd, cwd=working_dir, env=env, check=True)
     subprocess.run([os.sep.join([third_party, 'depot_tools', 'ninja']), '-C', output_dir, 'v8_monolith'],
@@ -81,7 +89,7 @@ def add_build_v8_parser(subparsers, option_name, target_platform,
     if has_build_type_choice:
         parser.add_argument('build_type', choices=build_type_choices)
     parser.set_defaults(func=lambda args: build_v8(args.target_arch,
-        args.build_type if has_build_type_choice else build_type_choices, target_platform))
+                        args.build_type if has_build_type_choice else build_type_choices, target_platform))
     return parser
 
 
@@ -125,7 +133,6 @@ if __name__ == '__main__':
     sync_arg_parser.set_defaults(func=lambda args: sync(args.revision))
 
     build_arg_parser = subparsers.add_parser('build')
-    build_arg_parser.add_argument('--v8_repo_dir', help='path to v8 repository')
     build_subparsers = build_arg_parser.add_subparsers(title='build subparsers')
 
     add_build_v8_parser(build_subparsers, 'windows', sys.platform, ['x64', 'ia32'], ['release', 'debug'])
