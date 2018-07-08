@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 
-default_v8_revision = '4fc9a2fe7f8a7ef1e7966185b39b3b541792669a'
+default_v8_revision = 'f3a4da42f2da435d9bdb4da9c6ff4302ba129408'
 
 this_dir_path = os.path.dirname(os.path.realpath(__file__))
 third_party = 'third_party'
