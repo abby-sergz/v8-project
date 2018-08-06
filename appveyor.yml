@@ -6,8 +6,8 @@ pull_requests:
 skip_tags: true
 
 image:
-- Visual Studio 2017
 - ubuntu
+- Visual Studio 2017
 
 configuration:
 - release
@@ -19,8 +19,8 @@ environment:
   - v8_TARGET_ARCH: ia32
 
 init:
-- cmd: echo %V8_TARGET_ARCH% %configuration%
-- sh: echo ${V8_TARGET_ARCH} ${configuration}
+- cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
+- sh: echo ${V8_TARGET_ARCH} ${CONFIGURATION}
 
 before_build:
 - cmd: python -m pip install -U pip
@@ -29,16 +29,16 @@ before_build:
 - sh: python3.5 build.py sync
 
 build_script:
-- cmd: C:\Python35-x64\python.exe build.py build windows %V8_TARGET_ARCH% %configuration%
-- sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${configuration}
+- cmd: C:\Python35-x64\python.exe build.py build windows %V8_TARGET_ARCH% %CONFIGURATION%
+- sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${CONFIGURATION}
 
 deploy_script:
-- cmd: dir build\win32\%V8_TARGET_ARCH%\%configuration%
-- cmd: dir build\win32\%V8_TARGET_ARCH%\%configuration%\obj
+- cmd: dir build\win32\%V8_TARGET_ARCH%\%CONFIGURATION%
+- cmd: dir build\win32\%V8_TARGET_ARCH%\%CONFIGURATION%\obj
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
-- path: build\win32\%V8_TARGET_ARCH%\%configuration%\obj\v8_monolith.lib
-  name: build-$(V8_TARGET_ARCH)_$(configuration)
+- path: build\win32\%V8_TARGET_ARCH%\%CONFIGURATION%\obj\v8_monolith.lib
+  name: build-$(V8_TARGET_ARCH)_$(CONFIGURATION)
   type: zip
 
