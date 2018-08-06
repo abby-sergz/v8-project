@@ -12,6 +12,10 @@
     "target_os":"\"android\"",
     "v8_android_log_stdout": true
   },
+  "windows": {
+    "is_clang": false,
+    "treat_warnings_as_errors": false
+   },
   "arm": {
     "target_cpu": "\"arm\"",
     "v8_target_cpu":"\"arm\""
