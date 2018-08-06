@@ -33,12 +33,12 @@ build_script:
 - sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${configuration}
 
 deploy_script:
-- cmd: dir build\%V8_TARGET_ARCH%\%configuration%
-- cmd: dir build\%V8_TARGET_ARCH%\%configuration%\obj
+- cmd: dir build\win32\%V8_TARGET_ARCH%\%configuration%
+- cmd: dir build\win32\%V8_TARGET_ARCH%\%configuration%\obj
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
-- path: build
+- path: build\win32\%V8_TARGET_ARCH%\%configuration%\obj\v8_monolith.lib
   name: build-$(V8_TARGET_ARCH)_$(configuration)
   type: zip
 
