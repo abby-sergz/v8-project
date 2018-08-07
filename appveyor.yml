@@ -20,7 +20,9 @@ environment:
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
+- cmd: set BUILD_OS=win32
 - sh: echo ${V8_TARGET_ARCH} ${CONFIGURATION}
+- sh: export BUILD_OS=linux
 
 before_build:
 - cmd: python -m pip install -U pip
@@ -38,7 +40,7 @@ deploy_script:
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
-- path: build\win32\%V8_TARGET_ARCH%\%CONFIGURATION%\obj\v8_monolith.lib
+- path: build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%\obj\v8_monolith.lib
   name: build-$(V8_TARGET_ARCH)_$(CONFIGURATION)
   type: zip
 
