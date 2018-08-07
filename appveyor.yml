@@ -11,9 +11,9 @@ configuration:
 
 environment:
   matrix:
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual·Studio·2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     V8_TARGET_ARCH: x64
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual·Studio·2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     v8_TARGET_ARCH: ia32
   - APPVEYOR_BUILD_WORKER_IMAGE: ubuntu
     v8_TARGET_ARCH: x64
