@@ -5,29 +5,18 @@ pull_requests:
 
 skip_tags: true
 
-image:
-- ubuntu
-- Visual Studio 2017
-
 configuration:
 - release
 - debug
 
-for:
--
+environment:
   matrix:
-    only:
-      image: Visual·Studio·2017
-    environment:
-      matrix:
-      - V8_TARGET_ARCH: x64
-      - v8_TARGET_ARCH: ia32
--
-  matrix:
-    only:
-      image: ubuntu
-    environment:
-    - V8_TARGET_ARCH: x64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual·Studio·2017
+    V8_TARGET_ARCH: x64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual·Studio·2017
+    v8_TARGET_ARCH: ia32
+  - APPVEYOR_BUILD_WORKER_IMAGE: ubuntu
+    v8_TARGET_ARCH: x64
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
