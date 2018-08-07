@@ -13,10 +13,21 @@ configuration:
 - release
 - debug
 
-environment:
+for:
+-
   matrix:
-  - V8_TARGET_ARCH: x64
-  - v8_TARGET_ARCH: ia32
+    only:
+      image: Visual·Studio·2017
+    environment:
+      matrix:
+      - V8_TARGET_ARCH: x64
+      - v8_TARGET_ARCH: ia32
+-
+  matrix:
+    only:
+      image: ubuntu
+    environment:
+    - V8_TARGET_ARCH: x64
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
