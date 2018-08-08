@@ -21,10 +21,10 @@ environment:
 init:
 - cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
 - cmd: set BUILD_OS=win32
-  cmd: set LIB_PREFIX=
+- cmd: set LIB_PREFIX=
 - sh: echo ${V8_TARGET_ARCH} ${CONFIGURATION}
 - sh: export BUILD_OS=linux
-  sh: export LIB_PREFIX=lib
+- sh: export LIB_PREFIX=lib
 
 before_build:
 - cmd: python -m pip install -U pip
