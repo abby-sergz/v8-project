@@ -41,11 +41,11 @@ deploy_script:
 - cmd: dir build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%\obj
 - sh: ls build/${BUILD_OS}/
 - sh: ls build/${BUILD_OS}/${V8_TARGET_ARCH}
-- sh: ls build/${BUILD_OS}/${V8_TARGET_ARCH}/${CONFIGURATION}
+- sh: ls build/${BUILD_OS}/${V8_TARGET_ARCH}/${CONFIGURATION}/obj
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
-- path: build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%\obj\%LIB_PREFIX%v8_monolith.lib
+- path: build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%\obj\%LIB_PREFIX%\v8_monolith.lib
   name: build-$(V8_TARGET_ARCH)_$(CONFIGURATION)
   type: zip
 
