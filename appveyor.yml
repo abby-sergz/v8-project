@@ -13,18 +13,19 @@ environment:
   matrix:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     V8_TARGET_ARCH: x64
+    LIB_PREFIX: 
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     V8_TARGET_ARCH: ia32
+    LIB_PREFIX: 
   - APPVEYOR_BUILD_WORKER_IMAGE: ubuntu
     V8_TARGET_ARCH: x64
+    LIB_PREFIX: lib
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
 - cmd: set BUILD_OS=win32
-- cmd: set LIB_PREFIX=
 - sh: echo ${V8_TARGET_ARCH} ${CONFIGURATION}
 - sh: export BUILD_OS=linux
-- sh: export LIB_PREFIX=lib
 
 before_build:
 - cmd: python -m pip install -U pip
@@ -36,14 +37,7 @@ build_script:
 - cmd: C:\Python35-x64\python.exe build.py build windows %V8_TARGET_ARCH% %CONFIGURATION%
 - sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${CONFIGURATION}
 
-deploy_script:
-- cmd: dir build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%
-- cmd: dir build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%\obj
-- cmd: dir build\%BUILD_OS%\%V8_TARGET_ARCH%\%CONFIGURATION%\obj\%LIB_PREFIX%v8_monolith.lib
-- sh: ls build/${BUILD_OS}/
-- sh: ls build/${BUILD_OS}/${V8_TARGET_ARCH}
-- sh: ls build/${BUILD_OS}/${V8_TARGET_ARCH}/${CONFIGURATION}/obj
-- sh: ls build/${BUILD_OS}/${V8_TARGET_ARCH}/${CONFIGURATION}/obj/${LIB_PREFIX}v8_monolith.lib
+#deploy_script:
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
