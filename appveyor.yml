@@ -40,7 +40,7 @@ build_script:
 - sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${CONFIGURATION}
 
 deploy_script:
-- sh: ls build\$(BUILD_OS)\$(V8_TARGET_ARCH)\$(CONFIGURATION)\obj\
+- sh: ls build\${BUILD_OS}\${V8_TARGET_ARCH}\${CONFIGURATION}\obj\
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
