@@ -11,15 +11,15 @@ configuration:
 
 environment:
   matrix:
-  - APPVEYOR_BUILD_WORKER_IMAGE: ubuntu
-    V8_TARGET_ARCH: x64
-    LIB_PREFIX: lib
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     V8_TARGET_ARCH: x64
     LIB_PREFIX: 
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     V8_TARGET_ARCH: ia32
     LIB_PREFIX: 
+  - APPVEYOR_BUILD_WORKER_IMAGE: ubuntu
+    V8_TARGET_ARCH: x64
+    LIB_PREFIX: lib
 
 init:
 - cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
