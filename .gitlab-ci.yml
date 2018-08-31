@@ -1,0 +1,36 @@
+---
+
+.job_template: &common_build_v8_lib
+  before_script:
+    - apt-get update
+    - apt-get install -yyq python python3.6 build-essential libgtk2.0-dev
+    - python3.6 build.py sync
+  artifacts:
+    paths:
+      - build
+
+build_v8_lib:x64-linux-debug:
+  <<: *common_build_v8_lib
+  script:
+    - python3.6 build.py build nix x64 debug
+  artifacts:
+    paths:
+      - build/linux/x64/debug/obj/libv8_monolith.a
+
+build_v8_lib:ia32-android:
+  <<: *common_build_v8_lib
+  script:
+    - python3.6 build.py build android ia32
+    - ls build
+
+build_v8_lib:arm-android:
+  <<: *common_build_v8_lib
+  script:
+    - python3.6 build.py build android arm
+
+build_v8_lib:arm64-android:
+  <<: *common_build_v8_lib
+  script:
+    - python3.6 build.py build android arm64
+    - ls build
+
