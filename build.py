@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 
+depot_tools_repository_url = 'https://chromium.googlesource.com/chromium/tools/depot_tools.git'
 default_v8_revision = '4a1a6a410f0b60c361aa1bf14dd911254c51e1b1'
 
 this_dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -19,13 +20,12 @@ def read_as_json(file_path):
 
 
 def sync(v8_revision):
-    '''Clones all required code and tools.
-    '''
+    """Clones all required code and tools."""
     working_dir = os.path.join(this_dir_path, third_party)
     depot_tools_path = os.sep.join([working_dir, 'depot_tools'])
     # a simple way to ensure that depot_tools exists
     if not os.path.exists(depot_tools_path):
-        cmd = ['git', 'clone', 'https://chromium.googlesource.com/chromium/tools/depot_tools.git']
+        cmd = ['git', 'clone', depot_tools_repository_url]
         subprocess.run(cmd, cwd=working_dir, check=True)
     env = os.environ.copy()
     env['PATH'] = os.pathsep.join([os.environ['PATH'], depot_tools_path])
@@ -43,13 +43,13 @@ def sync(v8_revision):
 
 
 def build_v8(target_arch, build_type, target_platform):
-    '''Build v8_monolith library.
+    """Build v8_monolith library.
 
     Arguments:
         target_arch - usually 'arm', 'ia32' or 'x64'
         build_type - 'release' or 'debug'
         target_platform - either 'android' or sys.platform
-    '''
+    """
     working_dir = os.path.join(this_dir_path, third_party, 'v8')
     output_dir = os.path.abspath(os.path.join('build', target_platform, target_arch, build_type))
     call_gn = [os.path.join('..', 'depot_tools', 'gn')]
@@ -82,8 +82,7 @@ def build_v8(target_arch, build_type, target_platform):
 
 def add_build_v8_parser(subparsers, option_name, target_platform,
                         target_arch_choices, build_type_choices):
-    '''Creates and returns a simple subparser.
-    '''
+    """Creates and returns a simple subparser."""
     parser = subparsers.add_parser(option_name)
     parser.add_argument('target_arch', choices=target_arch_choices)
     has_build_type_choice = not isinstance(build_type_choices, str)
@@ -94,39 +93,33 @@ def add_build_v8_parser(subparsers, option_name, target_platform,
     return parser
 
 
-was_help_called = False
+def print_brief_description(parser):
+    """Print all available commands with all possible arguments in a comprehensive form."""
+    def gen_subparsers(choice_item):
+        choice, parser = choice_item
+        for subparsers_action in parser._actions:
+            if isinstance(subparsers_action, argparse._SubParsersAction):
+                yield from subparsers_action.choices.items()
 
+    def print_choice_item(choice_item):
+        choice, parser = choice_item
+        print(parser.format_usage())
 
-class FullHelpAction(argparse._HelpAction):
-    def __call__(self, parser, namespace, values, option_string=None):
-        global was_help_called
-        was_help_called = True
-
-        def gen_subparsers(choice_item):
-            choice, parser = choice_item
-            for subparsers_action in parser._actions:
-                if isinstance(subparsers_action, argparse._SubParsersAction):
-                    yield from subparsers_action.choices.items()
-
-        def print_choice_item(choice_item):
-            choice, parser = choice_item
-            print(parser.format_usage())
-
-        # DFS
-        frontier = [('', parser)]
-        while frontier:
-            # pop first node from the frontier
-            choice_item = frontier.pop(0)
-            # visit node
-            print_choice_item(choice_item)
-            # prepend children
-            frontier = list(gen_subparsers(choice_item)) + frontier
+    # DFS
+    frontier = [('', parser)]
+    while frontier:
+        # pop first node from the frontier
+        choice_item = frontier.pop(0)
+        # visit node
+        print_choice_item(choice_item)
+        # prepend children
+        frontier = list(gen_subparsers(choice_item)) + frontier
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
     parser = argparse.ArgumentParser(description='Helper to build v8 for ABP', add_help=False)
-    parser.add_argument('--help', action=FullHelpAction)
+    parser.add_argument('--help', default=False, action='store_true')
     subparsers = parser.add_subparsers(title='available subcommands', help='additional help')
 
     sync_arg_parser = subparsers.add_parser('sync')
@@ -143,5 +136,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if 'func' in args:
         args.func(args)
-    elif not was_help_called:
+    elif args.help:
         parser.print_help()
+    else:
+        print_brief_description(parser)
