@@ -95,31 +95,26 @@ def add_build_v8_parser(subparsers, option_name, target_platform,
 
 def print_brief_description(parser):
     """Print all available commands with all possible arguments in a comprehensive form."""
-    def gen_subparsers(choice_item):
-        choice, parser = choice_item
+    def gen_subparsers(parser):
         for subparsers_action in parser._actions:
             if isinstance(subparsers_action, argparse._SubParsersAction):
-                yield from subparsers_action.choices.items()
-
-    def print_choice_item(choice_item):
-        choice, parser = choice_item
-        print(parser.format_usage())
+                yield from subparsers_action.choices.values()
 
     # DFS
-    frontier = [('', parser)]
+    frontier = [parser]
     while frontier:
         # pop first node from the frontier
-        choice_item = frontier.pop(0)
+        item = frontier.pop(0)
         # visit node
-        print_choice_item(choice_item)
+        print(item.format_usage())
         # prepend children
-        frontier = list(gen_subparsers(choice_item)) + frontier
+        frontier = list(gen_subparsers(item)) + frontier
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
     parser = argparse.ArgumentParser(description='Helper to build v8 for ABP', add_help=False)
-    parser.add_argument('--help', default=False, action='store_true')
+    parser.add_argument('--help', '-h', default=False, action='store_true')
     subparsers = parser.add_subparsers(title='available subcommands', help='additional help')
 
     sync_arg_parser = subparsers.add_parser('sync')
