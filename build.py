@@ -51,7 +51,7 @@ def build_v8(target_arch, build_type, target_platform):
         target_platform - either 'android' or sys.platform
     """
     working_dir = os.path.join(this_dir_path, third_party, 'v8')
-    output_dir = os.path.abspath(os.path.join('build', target_platform, target_arch, build_type))
+    output_dir = os.path.abspath(os.path.join('build', '.'.join([target_platform, target_arch, build_type])))
     call_gn = [os.path.join('..', 'depot_tools', 'gn')]
     env = os.environ.copy()
     if sys.platform == 'win32':
