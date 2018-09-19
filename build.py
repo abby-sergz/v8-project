@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 depot_tools_repository_url = 'https://chromium.googlesource.com/chromium/tools/depot_tools.git'
-default_v8_revision = 'aae279118869ad4ae1f31513a8b66a17ff2f0dd4' # 6.9.427.19
+default_v8_revision = '9a7be49a7a6e435d8a7d435c4879340a3cc7524c'
 
 this_dir_path = os.path.dirname(os.path.realpath(__file__))
 third_party = 'third_party'
@@ -51,7 +51,7 @@ def build_v8(target_arch, build_type, target_platform):
         target_platform - either 'android' or sys.platform
     """
     working_dir = os.path.join(this_dir_path, third_party, 'v8')
-    output_dir = os.path.abspath(os.path.join('build', target_platform, target_arch, build_type))
+    output_dir = os.path.abspath(os.path.join('build', '.'.join([target_platform, target_arch, build_type])))
     call_gn = [os.path.join('..', 'depot_tools', 'gn')]
     env = os.environ.copy()
     if sys.platform == 'win32':
