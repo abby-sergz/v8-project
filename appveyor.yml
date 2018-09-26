@@ -44,7 +44,7 @@ deploy_script:
 #- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
 
 artifacts:
-- path: build\$(BUILD_OS)\$(V8_TARGET_ARCH)\$(CONFIGURATION)\obj\$(OUTPUT_LIB)
+- path: build\$(BUILD_OS).$(V8_TARGET_ARCH).$(CONFIGURATION)\obj\$(OUTPUT_LIB)
   name: build-$(V8_TARGET_ARCH)_$(CONFIGURATION)
   type: zip
 
