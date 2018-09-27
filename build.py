@@ -60,7 +60,7 @@ def build_v8(target_arch, build_type, target_platform):
         call_gn[:0] = ['cmd', '/C']
 
     args_library = read_as_json('args-library.json')
-    args_os = {'win32': 'win', 'darwin': 'osx', 'linux': 'linux', 'android': 'android'}
+    args_os = {'win32': 'windows', 'darwin': 'osx', 'linux': 'linux', 'android': 'android'}
     gn_args = args_library['common'].copy()
     for args_part in [args_os[target_platform], target_arch, build_type]:
         if args_part not in args_library:
