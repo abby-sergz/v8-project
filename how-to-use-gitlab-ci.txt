@@ -1,0 +1,21 @@
+This config does not imply scaling or any advanced management, it's just a way to move the building from you machine to some another powerful machine. It's basically needed only for the meantime while DevOps are not ready with the company runners.
+
+- fork/create the repo. You should be "Maintainer" in order to get access to CI configuration of a repository
+
+- open the repo on gitlab and go to "Settings" then to "CI / CD", expand "Runners" and disable "Shared Runners", and don't close it because you will need the token in a couple of steps.
+
+- ensure that docker is installed on the server
+
+- create a folder for /etc/gitlab-runner of the container, e.g. "gitlab-runner". It allows to register it once and then re-use several times, although you can run a fresh container each time.
+
+- call the following command to register a new runner
+
+sudo docker run --rm -t -i -v /home/your-user-name/.../gitlab-runner/:/etc/gitlab-runner gitlab/gitlab-runner register --url "https://gitlab.com/" --registration-token "your token from the " --executor "shell"
+
+- now just run it. Pay attention that it creates a new volume "build-v8-vol" because otherwise there is no enough space and build fails by running out of it.
+
+sudo docker run --rm -t -i -v /home/your-user-name/.../gitlab-runner/:/etc/gitlab-runner -vbuild-v8-vol:/opt/ci --name gitlab-runner-to-build-v8 gitlab/gitlab-runner run --working-directory "/opt/ci"
+
+- check that it's green on the settings page
+
+- now you can use it.
