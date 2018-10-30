@@ -1,0 +1,39 @@
+sudo: required
+dist: trusty
+language: cpp
+python: '3.5'
+addons:
+  apt:
+    sources:
+    - 'git-core'
+    packages:
+    - g++-multilib
+    - binutils-gold
+    - libcurl4-openssl-dev
+    - git
+os:
+- linux
+env:
+  matrix:
+  - BUILD_ACTION=linux BUILD_PLATFORM=x64 BUILD_CONFIGURATION=Release
+  - BUILD_ACTION=android BUILD_PLATFORM=arm ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
+  - BUILD_ACTION=android BUILD_PLATFORM=ia32 ANDROID_NDK_ROOT=${TRAVIS_BUILD_DIR}/third_party/android-ndk-r10d
+  global:
+    secure: 1STdYRgL6zXGGSpgk49xhXvfr6U4P/ug1evhE04AhchFukP9asvLzotnUd9UZDuAsKLq8p978ZnhxqK8CDkwdpKhnOIplVcZwFVuB7tVWnzXttM7vEUFZ+icNnmVRrVHaZqpeM5dRsAD6pHSkPH5RvC5unqIQrHXNroc4/lklLMwm5hLUcKblraArB0gKvqFYukOEEuEV09q9A2qVGkOQHxio8doLfP88mZkmjAgosPbDaSnY5DB9xAFYFOBRqM6fMg2szFTgMlPifdS8oB9L7pVKw9LQvl7JqwUurWttMeVIT9osgs3SukgIqkHqzscr5x5s/FkW3pPmrSH8c66TlabvxcP3xiicdU0dc9MGtj+duZbS9HtrGapIFMuIwlMK922M4algIamMOinP7MgWGy0l3aE0g3HMOlN+gfYU9qaXP0It5n4z1S8ZN32j/EBD5/GKvhUQqGf+m64V7G60xReXESYK7bCoPiv0j33Evy0OSiCcohJHcRmBXl87WYoaIXCx5omDRmIuimJSb9C/oR7JAx8zhjzCc03ZGqFrq+EjWr+8gQBnJgI8a/cjL4yantHvFyOlzyK7J0N5nbyzkf0LK9wr18TtE+Ci0w5NteDHEjP2Jj+1R9Xcf8l0gRVA8+sECCwK2+82eU2TbgCJjfbNYDeSX2PesPwZjAMp4E=
+
+before_script:
+  - python3.5 build.py install-git-lfs
+  - python3.5 build.py sync
+  - python3.5 build.py get-android-ndk
+  - export PATH=$PATH:~/bin
+script: python3.5 build.py build-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
+  --make_params="-j4" && python3.5 build.py tests-${BUILD_ACTION} ${BUILD_PLATFORM}
+  ${BUILD_CONFIGURATION}
+deploy:
+  provider: script
+  script: python3.5 build.py deploy-${BUILD_ACTION} ${BUILD_PLATFORM} ${BUILD_CONFIGURATION}
+  skip_cleanup: true
+  on:
+    branch: ci-*
+notifications:
+  email: false
