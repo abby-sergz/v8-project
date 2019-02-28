@@ -10,6 +10,8 @@ lint_commit:
     - sudo apt-get update
     - sudo apt-get install -yyq python3.6
   script: python3.6 .gitlab-ci/check-first-parent.py
+  except:
+    - master
 
 .job_template: &common_build_v8_lib
   stage: build
