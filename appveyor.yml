@@ -1,0 +1,50 @@
+version: 1.0.{build}
+
+pull_requests:
+  do_not_increment_build_number: true
+
+skip_tags: true
+
+configuration:
+- release
+- debug
+
+environment:
+  matrix:
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    V8_TARGET_ARCH: x64
+    LIB_PREFIX: 
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    V8_TARGET_ARCH: ia32
+    LIB_PREFIX: 
+  - APPVEYOR_BUILD_WORKER_IMAGE: ubuntu
+    V8_TARGET_ARCH: x64
+    LIB_PREFIX: lib
+
+init:
+- cmd: echo %V8_TARGET_ARCH% %CONFIGURATION%
+- cmd: set BUILD_OS=win32
+- cmd: set OUTPUT_LIB=v8_monolith.lib
+- sh: echo ${V8_TARGET_ARCH} ${CONFIGURATION}
+- sh: export BUILD_OS=linux
+- sh: export OUTPUT_LIB=libv8_monolith.lib
+
+before_build:
+- cmd: python -m pip install -U pip
+- cmd: python -m pip install pywin32
+- cmd: C:\Python35-x64\python.exe build.py sync
+- sh: python3.5 build.py sync
+
+build_script:
+- cmd: C:\Python35-x64\python.exe build.py build windows %V8_TARGET_ARCH% %CONFIGURATION%
+- sh: python3.5 build.py build nix ${V8_TARGET_ARCH} ${CONFIGURATION}
+
+deploy_script:
+- sh: ls build\${BUILD_OS}\${V8_TARGET_ARCH}\${CONFIGURATION}\obj\
+#- cmd: C:\Python35-x64\python.exe build.py deploy-windows %V8_TARGET_ARCH% %Configuration%
+
+artifacts:
+- path: build\$(BUILD_OS).$(V8_TARGET_ARCH).$(CONFIGURATION)\obj\$(OUTPUT_LIB)
+  name: build-$(V8_TARGET_ARCH)_$(CONFIGURATION)
+  type: zip
+
