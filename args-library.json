@@ -11,6 +11,9 @@
     "target_os":"\"android\"",
     "v8_android_log_stdout": true
   },
+  "linux": {
+    "libcxx_abi_unstable": false
+  },
   "windows": {
     "is_clang": false,
     "treat_warnings_as_errors": false
